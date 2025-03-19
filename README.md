@@ -1,40 +1,41 @@
-local DataStoreService = game:GetService("DataStoreService")
-local RollbackData = DataStoreService:GetDataStore("RollbackInventory") -- สร้าง DataStore
+Local ID = game.PlaceId
+local baseURL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO_NAME/main/" -- DeathKid
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
 
-game.Players.PlayerAdded:Connect(function(player)
-    local userId = player.UserId
-    local savedInventory = RollbackData:GetAsync(userId)
-
-    if savedInventory then
-        -- โหลดไอเท็มจาก Rollback Data
-        player:SetAttribute("Inventory", savedInventory)
-        print(player.Name .. "'s inventory has been rolled back.")
+function GetGame()
+    if ID == 1234567890 then -- blue lock
+        return "MyGameScript.lua" -- DeathKid
     else
-        player:SetAttribute("Inventory", {}) -- ถ้าไม่มีข้อมูล ให้เริ่มต้นเป็น Inventory ว่างเปล่า
+        print("Game is not supported.")
+        return nil
     end
-end)
+end
 
-game.Players.PlayerRemoving:Connect(function(player)
-    local userId = player.UserId
-    local inventory = player:GetAttribute("Inventory")
-    
-    if inventory then
-        RollbackData:SetAsync(userId, inventory) -- บันทึกข้อมูลก่อนออกเกม
-    end
-end)
+local gameScript = GetGame()
 
-game.ReplicatedStorage.SaveRollback.OnServerEvent:Connect(function(player)
-    local inventory = player:GetAttribute("Inventory")
-    
-    if inventory then
-        RollbackData:SetAsync(player.UserId, inventory) -- บันทึก Inventory ปัจจุบัน
-        player:SetAttribute("RollbackEnabled", true) -- เปิดสถานะ Rollback
-        print(player.Name .. " saved their inventory for rollback.")
-    end
-end)
+if gameScript then
+    loadstring(game:HttpGet(baseURL .. gameScript))()
+end
 
-game.ReplicatedStorage.RemoveRollback.OnServerEvent:Connect(function(player)
-    RollbackData:RemoveAsync(player.UserId) -- ลบข้อมูล Rollback
-    player:SetAttribute("RollbackEnabled", false)
-    print(player.Name .. " removed rollback data.")
+for _, v in next, getconnections(plr.Idled) do
+    v:Disable()
+end
+
+local VirtualUser = game:GetService("VirtualUser")
+local status = getgenv().afk_toggle
+if status == nil then
+    getgenv().afk_toggle = false
+end
+
+if not plr then
+    error("Failed to get LocalPlayer reference")
+end
+
+plr.Idled:Connect(function()
+    if not getgenv().afk_toggle then return end
+    pcall(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
 end)
